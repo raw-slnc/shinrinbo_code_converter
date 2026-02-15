@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ShinrinboDialogBase</class>
+ <widget class="QDialog" name="ShinrinboDialogBase">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>720</width>
+    <height>620</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>森林簿コード変換</string>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <!-- Step 1: コード表 -->
+   <item>
+    <widget class="QGroupBox" name="groupCodeTable">
+     <property name="title">
+      <string>Step 1: コード表</string>
+     </property>
+     <layout class="QGridLayout" name="gridCodeTable">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelDocx">
+        <property name="text">
+         <string>コード表DOCX:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="editDocxPath">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="placeholderText">
+         <string>R6森林簿コード表（詳細版）.docx を選択...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QPushButton" name="btnBrowseDocx">
+        <property name="text">
+         <string>参照...</string>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>80</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelCacheStatus">
+        <property name="text">
+         <string>キャッシュ状態:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="labelCacheInfo">
+        <property name="text">
+         <string>未解析</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="btnParseDocx">
+        <property name="text">
+         <string>コード表解析</string>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>120</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- Step 2: データ選択 -->
+   <item>
+    <widget class="QGroupBox" name="groupData">
+     <property name="title">
+      <string>Step 2: データ選択</string>
+     </property>
+     <layout class="QGridLayout" name="gridData">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelXlsx">
+        <property name="text">
+         <string>森林簿XLSX:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="editXlsxPath">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="placeholderText">
+         <string>森林簿xlsxファイルを選択...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QPushButton" name="btnBrowseXlsx">
+        <property name="text">
+         <string>参照...</string>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>80</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelXlsxInfo">
+        <property name="text">
+         <string>XLSX情報:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1" colspan="2">
+       <widget class="QLabel" name="labelXlsxDetail">
+        <property name="text">
+         <string>未選択</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelShp">
+        <property name="text">
+         <string>計画図Shape:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="editShpPath">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="placeholderText">
+         <string>森林計画図Shapefileを選択...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QPushButton" name="btnBrowseShp">
+        <property name="text">
+         <string>参照...</string>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>80</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelShpInfo">
+        <property name="text">
+         <string>Shape情報:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1" colspan="2">
+       <widget class="QLabel" name="labelShpDetail">
+        <property name="text">
+         <string>未選択</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- Step 3: 出力設定 -->
+   <item>
+    <widget class="QGroupBox" name="groupOutput">
+     <property name="title">
+      <string>Step 3: 出力設定</string>
+     </property>
+     <layout class="QGridLayout" name="gridOutput">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelOutputFormat">
+        <property name="text">
+         <string>出力形式:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QRadioButton" name="radioMemory">
+        <property name="text">
+         <string>メモリレイヤ</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QRadioButton" name="radioGeoPackage">
+        <property name="text">
+         <string>GeoPackage</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelGpkgPath">
+        <property name="text">
+         <string>GPKG保存先:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="editGpkgPath">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="placeholderText">
+         <string>GeoPackage保存先を選択...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="btnBrowseGpkg">
+        <property name="text">
+         <string>参照...</string>
+        </property>
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>80</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelLayerName">
+        <property name="text">
+         <string>レイヤ名:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1" colspan="2">
+       <widget class="QLineEdit" name="editLayerName">
+        <property name="text">
+         <string>森林簿_変換済</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="checkKeepCodes">
+        <property name="text">
+         <string>コード列も残す</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- Step 4: 実行 -->
+   <item>
+    <widget class="QGroupBox" name="groupExecute">
+     <property name="title">
+      <string>Step 4: 実行</string>
+     </property>
+     <layout class="QVBoxLayout" name="vboxExecute">
+      <item>
+       <widget class="QProgressBar" name="progressBar">
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="labelStatus">
+        <property name="text">
+         <string>待機中</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="hboxButtons">
+        <item>
+         <widget class="QPushButton" name="btnExecute">
+          <property name="text">
+           <string>変換実行</string>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>120</width>
+            <height>32</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnCancel">
+          <property name="text">
+           <string>キャンセル</string>
+          </property>
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnClose">
+          <property name="text">
+           <string>閉じる</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- 結果サマリ -->
+   <item>
+    <widget class="QTextEdit" name="textResult">
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>120</height>
+      </size>
+     </property>
+     <property name="placeholderText">
+      <string>結果サマリがここに表示されます</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

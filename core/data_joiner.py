@@ -1,0 +1,157 @@
+# -*- coding: utf-8 -*-
+"""
+データ結合モジュール
+森林簿XLSXの変換済みデータとShapefileをKEY1+整理番号_枝番の複合キーで結合する。
+"""
+import os
+import logging
+from typing import Dict, Any, List, Callable, Optional
+
+from .code_table_registry import CodeTableRegistry
+from .code_converter import convert_row, get_name_columns, CD_COLUMN_TO_TABLE
+from .xlsx_reader import read_xlsx, get_cd_columns
+
+logger = logging.getLogger(__name__)
+
+
+class JoinResult:
+    def __init__(self):
+        self.xlsx_rows = 0
+        self.shp_features = 0
+        self.joined = 0
+        self.unmatched_shp = 0
+        self.unmatched_xlsx = 0
+        self.unknown_cd_count = 0
+        self.duplicate_key = 0
+        self.output_fields = 0
+        self.layer = None
+        self.errors: List[str] = []
+
+    def summary(self) -> str:
+        lines = [
+            '=== 変換結果 ===',
+            f'XLSX行数: {self.xlsx_rows:,}',
+            f'Shape特徴量: {self.shp_features:,}',
+            f'結合成功: {self.joined:,}',
+            f'Shape未結合: {self.unmatched_shp:,}',
+            f'XLSX未結合: {self.unmatched_xlsx:,}',
+            f'変換不明値: {self.unknown_cd_count:,}件',
+            f'重複キー: {self.duplicate_key:,}行',
+            f'出力フィールド数: {self.output_fields}',
+        ]
+        if self.errors:
+            lines.append(f'エラー: {len(self.errors)}件')
+            for e in self.errors[:5]:
+                lines.append(f'  - {e}')
+        return '\n'.join(lines)
+
+
+def join_data(
+    registry: CodeTableRegistry,
+    xlsx_path: str,
+    shp_path: str,
+    output_gpkg: Optional[str],
+    layer_name: str,
+    keep_codes: bool,
+    progress_callback: Optional[Callable] = None,
+    cancel_check: Optional[Callable] = None,
+) -> JoinResult:
+    """森林簿XLSXとShapefileをKEY1+整理番号_枝番の複合キーで結合し、QGISレイヤを構築する。
+
+    ステップ:
+    1. XLSX読込・変換 → メモリ内辞書に複合キーで格納
+    2. Shapefile読込 → 複合キーで結合
+    3. 出力レイヤ構築
+    """
+    result = JoinResult()
+
+    # ---- Step 1: XLSX読込・変換 → メモリ内辞書 ----
+    if progress_callback:
+        progress_callback(0, 'XLSX読込準備中...')
+
+    xlsx_data = {}  # composite_key -> converted row dict
+    headers = None
+    cd_columns = None
+    name_columns = None
+    row_count = 0
+
+    for row in read_xlsx(xlsx_path):
+        if cancel_check and cancel_check():
+            return result
+
+        if headers is None:
+            headers = list(row.keys())
+            cd_columns = get_cd_columns(headers)
+            name_columns = get_name_columns(cd_columns)
+
+        row_count += 1
+        converted = convert_row(row, registry, cd_columns)
+
+        # 不明値カウント
+        for col in cd_columns:
+            name_col = name_columns[col]
+            val = converted.get(name_col, '')
+            if isinstance(val, str) and val.startswith('[不明:'):
+                result.unknown_cd_count += 1
+
+        # 複合キー: KEY1 + 整理番号_枝番
+        key1 = str(converted.get('KEY1', '')).strip()
+        branch = str(converted.get('整理番号_枝番', '')).strip()
+        composite_key = f'{key1}_{branch}' if branch else key1
+        if composite_key:
+            if composite_key in xlsx_data:
+                result.duplicate_key += 1
+            else:
+                xlsx_data[composite_key] = converted
+
+        if row_count % 5000 == 0 and progress_callback:
+            progress_callback(
+                min(40, int(row_count / 150000 * 40)),
+                f'XLSX読込中... {row_count:,}行'
+            )
+
+    result.xlsx_rows = row_count
+
+    if progress_callback:
+        progress_callback(40, f'XLSX読込完了: {row_count:,}行')
+
+    # ---- Step 2: フィールド定義の構築 ----
+    if not headers or not xlsx_data:
+        result.errors.append('XLSXデータが空です')
+        return result
+
+    # サンプル行からフィールドを構築
+    sample_row = next(iter(xlsx_data.values()))
+    all_field_names = list(sample_row.keys())
+
+    if not keep_codes:
+        # コード列を除外（名称列のみ残す）
+        remove_cols = set()
+        for col in cd_columns:
+            if col in CD_COLUMN_TO_TABLE or col.startswith('施業履歴_施業方法') or col.startswith('施業履歴_事業種類'):
+                remove_cols.add(col)
+        all_field_names = [f for f in all_field_names if f not in remove_cols]
+
+    # ---- Step 3: Shapefile結合 + 出力レイヤ構築 ----
+    if progress_callback:
+        progress_callback(45, 'Shapefile読込中...')
+
+    from .layer_builder import build_layer
+    layer = build_layer(
+        shp_path=shp_path,
+        xlsx_data=xlsx_data,
+        field_names=all_field_names,
+        output_gpkg=output_gpkg,
+        layer_name=layer_name,
+        progress_callback=progress_callback,
+        cancel_check=cancel_check,
+        result=result,
+    )
+
+    result.layer = layer
+    result.output_fields = len(all_field_names)
+
+    # 未結合XLSX行を計算
+    result.unmatched_xlsx = result.xlsx_rows - result.joined - result.duplicate_key
+
+    return result

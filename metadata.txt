@@ -1,0 +1,31 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=Shinrinbo Code Converter
+qgisMinimumVersion=3.0
+description=Converts code values in Shizuoka Prefecture's forest register to human-readable text based on the code table, joins with forest planning maps, and outputs as a QGIS layer. / 静岡県森林簿のコード値をコード表に基づきテキストに変換し、森林計画図と結合してQGISレイヤとして出力するプラグインです。
+version=0.1
+author=Hideharu Maasai
+email=hideharumasai@void.mints.ne.jp
+
+about=Automatically converts code values (CD columns) in Shizuoka Prefecture's forest register (xlsx), published as open data, into human-readable text based on the forest register code table (docx). Joins with forest planning maps (Shapefile) using the KEY1 field and outputs as a GIS layer with attribute information. / 静岡県がオープンデータとして公開している森林簿（xlsx）のコード値（CD列）を、森林簿コード表（docx）に基づき自動的に人間が読めるテキストに変換します。森林計画図（Shapefile）とKEY1フィールドで結合し、属性情報付きのGISレイヤとして出力します。
+
+tracker=https://github.com/raw-slnc/shinrinbo_code_converter/issues
+repository=https://github.com/raw-slnc/shinrinbo_code_converter
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# changelog=
+
+tags=python,forest,shinrinbo,shizuoka,code,converter,vector,japan
+
+homepage=https://github.com/raw-slnc/shinrinbo_code_converter
+category=Vector
+icon=icon.png
+experimental=True
+deprecated=False
+server=False
