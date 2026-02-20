@@ -21,7 +21,12 @@ def read_xlsx(path: str, sheet_name: str = 'データ') -> Iterator[Dict[str, An
     """
     import openpyxl
 
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    # read_only=True は lxml.etree.iterparse（ジェネレータ）を使うため
+    # wb.close() 後も _IterparseContext が GC 待ちで残る。
+    # QThread 起動時に GIL 解放のタイミングで xmlDictFree が呼ばれ、
+    # Windows の未初期化クリティカルセクションを取得しようとしてアクセス違反になる。
+    # → read_only=False（デフォルト）で全量ロードし iterparse を避ける。
+    wb = openpyxl.load_workbook(path, data_only=True)
 
     # シート名で検索、なければ最初のシート
     if sheet_name in wb.sheetnames:

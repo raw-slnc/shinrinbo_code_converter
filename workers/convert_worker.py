@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""変換パイプラインワーカースレッド"""
+"""変換パイプラインワーカースレッド
+
+Windows対応:
+- XLSX読込(openpyxl/lxml)はメインスレッドで実施済みのxlsx_rowsを受け取る
+- GeoPackage書き出し(QgsVectorFileWriter)はメインスレッドで実施
+- このワーカーは純Pythonのコード変換とQgsVectorLayer(メモリ)構築のみ行う
+"""
 from qgis.PyQt.QtCore import QObject, pyqtSignal
 import traceback
 
@@ -9,13 +15,11 @@ class ConvertWorker(QObject):
     finished = pyqtSignal(dict)           # result dict with 'layer' and 'summary'
     error = pyqtSignal(str)
 
-    def __init__(self, cache_path, xlsx_path, shp_path,
-                 output_gpkg, layer_name, keep_codes):
+    def __init__(self, cache_path, xlsx_rows, shp_path, layer_name, keep_codes):
         super().__init__()
         self.cache_path = cache_path
-        self.xlsx_path = xlsx_path
+        self.xlsx_rows = xlsx_rows  # メインスレッドで事前読込済みのXLSXデータ
         self.shp_path = shp_path
-        self.output_gpkg = output_gpkg
         self.layer_name = layer_name
         self.keep_codes = keep_codes
         self._cancelled = False
@@ -34,11 +38,12 @@ class ConvertWorker(QObject):
             registry.load_from_json(self.cache_path)
 
             # 結合実行
+            # output_gpkg=None: GeoPackage書き出しはメインスレッドで行うため常にメモリレイヤを返す
             join_result = join_data(
                 registry=registry,
-                xlsx_path=self.xlsx_path,
+                xlsx_rows=self.xlsx_rows,
                 shp_path=self.shp_path,
-                output_gpkg=self.output_gpkg,
+                output_gpkg=None,
                 layer_name=self.layer_name,
                 keep_codes=self.keep_codes,
                 progress_callback=lambda pct, msg: self.progress.emit(pct, msg),

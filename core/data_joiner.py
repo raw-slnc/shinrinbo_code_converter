@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Callable, Optional
 
 from .code_table_registry import CodeTableRegistry
 from .code_converter import convert_row, get_name_columns, CD_COLUMN_TO_TABLE
-from .xlsx_reader import read_xlsx, get_cd_columns
+from .xlsx_reader import get_cd_columns
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class JoinResult:
 
 def join_data(
     registry: CodeTableRegistry,
-    xlsx_path: str,
+    xlsx_rows: list,
     shp_path: str,
     output_gpkg: Optional[str],
     layer_name: str,
@@ -59,15 +59,16 @@ def join_data(
     """森林簿XLSXとShapefileをKEY1+整理番号_枝番の複合キーで結合し、QGISレイヤを構築する。
 
     ステップ:
-    1. XLSX読込・変換 → メモリ内辞書に複合キーで格納
+    1. XLSX変換 → メモリ内辞書に複合キーで格納（xlsx_rowsは呼び出し元で事前読込済み）
     2. Shapefile読込 → 複合キーで結合
     3. 出力レイヤ構築
     """
     result = JoinResult()
 
-    # ---- Step 1: XLSX読込・変換 → メモリ内辞書 ----
+    # ---- Step 1: XLSX変換 → メモリ内辞書 ----
+    # xlsx_rowsはメインスレッドで事前読込済み（lxmlスレッド安全問題の回避）
     if progress_callback:
-        progress_callback(0, 'XLSX読込準備中...')
+        progress_callback(0, 'コード変換中...')
 
     xlsx_data = {}  # composite_key -> converted row dict
     headers = None
@@ -75,7 +76,7 @@ def join_data(
     name_columns = None
     row_count = 0
 
-    for row in read_xlsx(xlsx_path):
+    for row in xlsx_rows:
         if cancel_check and cancel_check():
             return result
 
@@ -107,13 +108,13 @@ def join_data(
         if row_count % 5000 == 0 and progress_callback:
             progress_callback(
                 min(40, int(row_count / 150000 * 40)),
-                f'XLSX読込中... {row_count:,}行'
+                f'コード変換中... {row_count:,}行'
             )
 
     result.xlsx_rows = row_count
 
     if progress_callback:
-        progress_callback(40, f'XLSX読込完了: {row_count:,}行')
+        progress_callback(40, f'コード変換完了: {row_count:,}行')
 
     # ---- Step 2: フィールド定義の構築 ----
     if not headers or not xlsx_data:

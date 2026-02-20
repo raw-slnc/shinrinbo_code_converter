@@ -23,6 +23,8 @@ class ShinrinboDialog(QDialog, FORM_CLASS):
         self._parse_worker = None
         self._convert_thread = None
         self._convert_worker = None
+        self._pending_output_gpkg = None
+        self._pending_layer_name = None
 
         self._connect_signals()
         self._check_cache()
@@ -181,15 +183,30 @@ class ShinrinboDialog(QDialog, FORM_CLASS):
         self.btnExecute.setEnabled(False)
         self.btnCancel.setEnabled(True)
         self.progressBar.setValue(0)
-        self.labelStatus.setText('開始中...')
         self.textResult.clear()
+
+        # XLSXをメインスレッドで読込
+        # ワーカースレッドでopenpyxlを使うとlxml/libxml2のスレッド非安全により
+        # Windowsでアクセス違反が発生するため、事前読込してdictリストとして渡す
+        self.labelStatus.setText('XLSX読込中...')
+        try:
+            from .core.xlsx_reader import read_xlsx
+            xlsx_rows = list(read_xlsx(xlsx_path))
+        except Exception as e:
+            QMessageBox.critical(self, 'エラー', f'XLSXの読み込みに失敗しました:\n{e}')
+            self.btnExecute.setEnabled(True)
+            self.btnCancel.setEnabled(False)
+            self.labelStatus.setText('エラー')
+            return
+
+        self._pending_output_gpkg = output_gpkg
+        self._pending_layer_name = layer_name
 
         self._convert_thread = QThread()
         self._convert_worker = ConvertWorker(
             cache_path=cache,
-            xlsx_path=xlsx_path,
+            xlsx_rows=xlsx_rows,
             shp_path=shp_path,
-            output_gpkg=output_gpkg,
             layer_name=layer_name,
             keep_codes=keep_codes,
         )
@@ -201,7 +218,9 @@ class ShinrinboDialog(QDialog, FORM_CLASS):
         self._convert_worker.error.connect(self._on_convert_error)
         self._convert_worker.finished.connect(self._convert_thread.quit)
         self._convert_worker.error.connect(self._convert_thread.quit)
+        self._convert_thread.finished.connect(self._cleanup_convert_thread)
 
+        self.labelStatus.setText('開始中...')
         self._convert_thread.start()
 
     def _on_convert_progress(self, percent, message):
@@ -212,16 +231,62 @@ class ShinrinboDialog(QDialog, FORM_CLASS):
         self.btnExecute.setEnabled(True)
         self.btnCancel.setEnabled(False)
         self.progressBar.setValue(100)
+
+        layer = result.get('layer')
+        output_gpkg = self._pending_output_gpkg
+        layer_name = self._pending_layer_name or '森林簿_変換済'
+
+        # GeoPackage書き出しをメインスレッドで実行
+        # ワーカースレッドでQgsVectorFileWriterを使うとWindowsでGDAL/OGRが
+        # アクセス違反を起こすため、メインスレッドで書き出す
+        if output_gpkg and layer and layer.isValid():
+            self.labelStatus.setText('GeoPackage書き出し中...')
+            from qgis.core import (
+                QgsVectorFileWriter, QgsCoordinateTransformContext, QgsVectorLayer
+            )
+            options = QgsVectorFileWriter.SaveVectorOptions()
+            options.driverName = 'GPKG'
+            options.layerName = layer_name
+            options.fileEncoding = 'UTF-8'
+            context = QgsCoordinateTransformContext()
+            write_result = QgsVectorFileWriter.writeAsVectorFormatV3(
+                layer, output_gpkg, context, options
+            )
+            if isinstance(write_result, tuple):
+                error_code = write_result[0]
+                error_msg = write_result[1] if len(write_result) > 1 else ''
+            else:
+                error_code = write_result
+                error_msg = ''
+
+            if error_code == QgsVectorFileWriter.NoError:
+                gpkg_layer = QgsVectorLayer(
+                    f'{output_gpkg}|layername={layer_name}', layer_name, 'ogr'
+                )
+                if gpkg_layer.isValid():
+                    layer = gpkg_layer
+            else:
+                QMessageBox.warning(
+                    self, '警告',
+                    f'GeoPackage書き出しエラー: {error_msg}\nメモリレイヤとして追加します。'
+                )
+
         self.labelStatus.setText('完了')
 
-        # result is a dict with summary info and optionally a layer
-        layer = result.get('layer')
         if layer and layer.isValid():
             from qgis.core import QgsProject
             QgsProject.instance().addMapLayer(layer)
 
         summary = result.get('summary', '')
         self.textResult.setPlainText(summary)
+
+    def _cleanup_convert_thread(self):
+        if self._convert_worker:
+            self._convert_worker.deleteLater()
+            self._convert_worker = None
+        if self._convert_thread:
+            self._convert_thread.deleteLater()
+            self._convert_thread = None
 
     def _on_convert_error(self, error_msg):
         self.btnExecute.setEnabled(True)
