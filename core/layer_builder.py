@@ -55,7 +55,7 @@ def build_layer(
         # Shapefileと同名のフィールドは「_簿」サフィックスを付ける
         actual_name = fname
         if fname in shp_field_names and fname != 'KEY1':
-            actual_name = fname + '_簿'
+            actual_name = fname + '_森林簿'
         # フィールド名は10文字制限があるDBFだがメモリレイヤ/GeoPackageでは制限なし
         fields.append(QgsField(actual_name, QVariant.String))
 
@@ -127,7 +127,7 @@ def _build_memory_layer(
             for fname in field_names:
                 actual_name = fname
                 if fname in shp_field_names and fname != 'KEY1':
-                    actual_name = fname + '_簿'
+                    actual_name = fname + '_森林簿'
                 val = xlsx_row.get(fname)
                 if val is not None:
                     new_feat.setAttribute(actual_name, str(val))
