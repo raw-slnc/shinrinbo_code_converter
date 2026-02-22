@@ -5,7 +5,7 @@
 [general]
 name=Shinrinbo Code Converter
 qgisMinimumVersion=3.20
-description=Converts code values in Shizuoka Prefecture's forest register to human-readable text based on the code table, joins with forest planning maps, and outputs as a QGIS layer. / 静岡県森林簿のコード値をコード表に基づきテキストに変換し、森林計画図と結合してQGISレイヤとして出力するプラグインです。
+description=Converts code values in Shizuoka Prefecture's forest register to human-readable text based on the code table, joins with forest planning maps, and outputs as a QGIS layer.
 version=0.1.2
 author=Hideharu Masai
 email=hideharumasai@void.mints.ne.jp
