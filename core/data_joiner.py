@@ -95,10 +95,19 @@ def join_data(
             if isinstance(val, str) and val.startswith('[不明:'):
                 result.unknown_cd_count += 1
 
-        # 複合キー: KEY1 + 整理番号_枝番
-        key1 = str(converted.get('KEY1', '')).strip()
-        branch = str(converted.get('整理番号_枝番', '')).strip()
-        composite_key = f'{key1}_{branch}' if branch else key1
+        # 複合キー: KEY1 + 整理番号_親番 + 整理番号_枝番
+        # 混交林では同一小班に親番=1(主林木)・親番=2(副林木)の複数行があるため
+        # 親番を含めないと重複キーと誤判定される
+        key1 = str(converted.get('KEY1', '') or '').strip()
+        parent_raw = converted.get('整理番号_親番', None)
+        parent = str(parent_raw).strip() if parent_raw is not None else ''
+        branch_raw = converted.get('整理番号_枝番', None)
+        branch = str(branch_raw).strip() if branch_raw is not None else ''
+        composite_key = key1
+        if parent:
+            composite_key += f'_{parent}'
+        if branch:
+            composite_key += f'_{branch}'
         if composite_key:
             if composite_key in xlsx_data:
                 result.duplicate_key += 1
@@ -106,10 +115,9 @@ def join_data(
                 xlsx_data[composite_key] = converted
 
         if row_count % 5000 == 0 and progress_callback:
-            progress_callback(
-                min(40, int(row_count / 150000 * 40)),
-                f'コード変換中... {row_count:,}行'
-            )
+            total_xlsx = len(xlsx_rows)
+            pct = int(row_count / total_xlsx * 40) if total_xlsx else 0
+            progress_callback(min(40, pct), f'コード変換中... {row_count:,}行')
 
     result.xlsx_rows = row_count
 

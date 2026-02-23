@@ -104,12 +104,17 @@ def _build_memory_layer(
         count += 1
         key1 = str(shp_feat['KEY1']).strip() if shp_feat['KEY1'] else ''
 
-        # 複合キー: KEY1 + 整理番号_枝番
-        # SHP側: 整理番号_親番→「整理番号_」, 整理番号_枝番→「整理番号1」に截断
-        branch = ''
-        if '整理番号1' in shp_field_names:
-            branch = str(shp_feat['整理番号1']).strip() if shp_feat['整理番号1'] else ''
-        composite_key = f'{key1}_{branch}' if branch else key1
+        # 複合キー: KEY1 + 整理番号_親番 + 整理番号_枝番
+        # SHP側DBFフィールド名: 整理番号_親番→「整理番号_」, 整理番号_枝番→「整理番号1」に截断
+        parent_val = shp_feat['整理番号_'] if '整理番号_' in shp_field_names else None
+        parent = str(parent_val).strip() if parent_val is not None else ''
+        branch_val = shp_feat['整理番号1'] if '整理番号1' in shp_field_names else None
+        branch = str(branch_val).strip() if branch_val is not None else ''
+        composite_key = key1
+        if parent:
+            composite_key += f'_{parent}'
+        if branch:
+            composite_key += f'_{branch}'
 
         new_feat = QgsFeature(mem_layer.fields())
         new_feat.setGeometry(shp_feat.geometry())

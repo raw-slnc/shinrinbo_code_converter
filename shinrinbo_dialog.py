@@ -2,7 +2,7 @@
 import os
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QThread
-from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QMessageBox
+from qgis.PyQt.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox
 
 from .workers.parse_worker import ParseWorker
 from .workers.convert_worker import ConvertWorker
@@ -188,16 +188,37 @@ class ShinrinboDialog(QDialog, FORM_CLASS):
         # XLSXをメインスレッドで読込
         # ワーカースレッドでopenpyxlを使うとlxml/libxml2のスレッド非安全により
         # Windowsでアクセス違反が発生するため、事前読込してdictリストとして渡す
-        self.labelStatus.setText('XLSX読込中...')
+
+        # load_workbook 中はメインスレッドがブロックされるため空バーで待機表示
+        # （マーキーはprocessEvents()が止まると固まって見えるため使わない）
+        self.progressBar.setRange(0, 100)
+        self.progressBar.setValue(0)
+        self.labelStatus.setText('XLSXファイル読込中...')
+        QApplication.processEvents()
+
+        def _on_xlsx_progress(current, total):
+            # load_workbook 完了後の最初の呼び出し（current==0）で上限を確定する
+            if current == 0 and total > 0:
+                self.progressBar.setRange(0, total)
+            self.progressBar.setValue(current)
+            self.labelStatus.setText(f'XLSX読込中... {current:,} / {total:,} 行')
+            QApplication.processEvents()
+
         try:
             from .core.xlsx_reader import read_xlsx
-            xlsx_rows = list(read_xlsx(xlsx_path))
+            xlsx_rows = list(read_xlsx(xlsx_path, progress_callback=_on_xlsx_progress))
         except Exception as e:
+            self.progressBar.setRange(0, 100)
+            self.progressBar.setValue(0)
             QMessageBox.critical(self, 'エラー', f'XLSXの読み込みに失敗しました:\n{e}')
             self.btnExecute.setEnabled(True)
             self.btnCancel.setEnabled(False)
             self.labelStatus.setText('エラー')
             return
+
+        # ConvertWorker は 0-100% の range で進捗を送出するので元に戻す
+        self.progressBar.setRange(0, 100)
+        self.progressBar.setValue(0)
 
         self._pending_output_gpkg = output_gpkg
         self._pending_layer_name = layer_name

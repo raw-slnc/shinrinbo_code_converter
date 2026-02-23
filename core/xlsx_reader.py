@@ -9,12 +9,16 @@ from typing import Iterator, Dict, Any, List
 logger = logging.getLogger(__name__)
 
 
-def read_xlsx(path: str, sheet_name: str = 'データ') -> Iterator[Dict[str, Any]]:
+def read_xlsx(path: str, sheet_name: str = 'データ',
+              progress_callback=None) -> Iterator[Dict[str, Any]]:
     """XLSXファイルをストリーミングで読み込み、行辞書を返す。
 
     Args:
         path: XLSXファイルパス
         sheet_name: シート名（デフォルト: 'データ'）
+        progress_callback: 進捗コールバック (current: int, total: int) → None
+                           load_workbook 完了直後に (0, total) で呼ばれ、
+                           以降 5000 行ごと・最終行で (row_num, total) で呼ばれる。
 
     Yields:
         {カラム名: 値, ...} の辞書
@@ -35,7 +39,13 @@ def read_xlsx(path: str, sheet_name: str = 'データ') -> Iterator[Dict[str, An
         ws = wb[wb.sheetnames[0]]
         logger.warning(f'シート "{sheet_name}" が見つかりません。"{wb.sheetnames[0]}" を使用します。')
 
+    # load_workbook 完了 → 総行数が確定。コールバックで進捗バーの上限を通知する。
+    total_rows = max((ws.max_row or 1) - 1, 0)  # ヘッダー行を除いたデータ行数
+    if progress_callback:
+        progress_callback(0, total_rows)
+
     headers = None
+    row_num = 0
     for row in ws.iter_rows(values_only=True):
         if headers is None:
             headers = [str(h).strip() if h is not None else f'col_{i}'
@@ -46,7 +56,15 @@ def read_xlsx(path: str, sheet_name: str = 'データ') -> Iterator[Dict[str, An
         for i, val in enumerate(row):
             if i < len(headers):
                 row_dict[headers[i]] = val
+
+        row_num += 1
+        if progress_callback and row_num % 5000 == 0:
+            progress_callback(row_num, total_rows)
+
         yield row_dict
+
+    if progress_callback:
+        progress_callback(row_num, total_rows)  # 最終行の端数を確実に報告
 
     wb.close()
 
