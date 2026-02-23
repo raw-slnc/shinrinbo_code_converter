@@ -123,7 +123,18 @@ def join_data(
 
     # サンプル行からフィールドを構築
     sample_row = next(iter(xlsx_data.values()))
-    all_field_names = list(sample_row.keys())
+    raw_field_names = list(sample_row.keys())
+
+    # CD列の直後に名称列を挿入（隣接配置）
+    name_col_set = set(name_columns.values())
+    ordered_fields = []
+    for fname in raw_field_names:
+        if fname in name_col_set:
+            continue  # 名称列はこの位置ではスキップ（後でCD列の直後に挿入）
+        ordered_fields.append(fname)
+        if fname in name_columns:  # このフィールドはCD列 → 直後に名称列を挿入
+            ordered_fields.append(name_columns[fname])
+    all_field_names = ordered_fields
 
     if not keep_codes:
         # コード列を除外（名称列のみ残す）
