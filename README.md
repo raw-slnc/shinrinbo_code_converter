@@ -48,6 +48,11 @@
    - macOS: `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/`
 3. QGISを起動し、プラグインマネージャから有効化
 
+## サポート
+
+開発を応援していただけると嬉しいです:
+https://paypal.me/rawslnc
+
 ## ライセンス
 
 GPL-2.0-or-later

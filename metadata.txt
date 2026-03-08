@@ -10,7 +10,7 @@ version=0.1.3
 author=Hideharu Masai
 email=hideharumasai@void.mints.ne.jp
 
-about=Automatically converts code values (CD columns) in Shizuoka Prefecture's forest register (xlsx), published as open data, into human-readable text based on the forest register code table (docx). Joins with forest planning maps (Shapefile) using the KEY1 field and outputs as a GIS layer with attribute information. / 静岡県がオープンデータとして公開している森林簿（xlsx）のコード値（CD列）を、森林簿コード表（docx）に基づき自動的に人間が読めるテキストに変換します。森林計画図（Shapefile）とKEY1フィールドで結合し、属性情報付きのGISレイヤとして出力します。
+about=Automatically converts code values (CD columns) in Shizuoka Prefecture's forest register (xlsx), published as open data, into human-readable text based on the forest register code table (docx). Joins with forest planning maps (Shapefile) using the KEY1 field and outputs as a GIS layer with attribute information. / 静岡県がオープンデータとして公開している森林簿（xlsx）のコード値（CD列）を、森林簿コード表（docx）に基づき自動的に人間が読めるテキストに変換します。森林計画図（Shapefile）とKEY1フィールドで結合し、属性情報付きのGISレイヤとして出力します。 / Support: https://paypal.me/rawslnc
 
 tracker=https://github.com/raw-slnc/shinrinbo_code_converter/issues
 repository=https://github.com/raw-slnc/shinrinbo_code_converter
