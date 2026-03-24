@@ -55,4 +55,8 @@ https://paypal.me/rawslnc
 
 ## ライセンス
 
-GPL-2.0-or-later
+GNU General Public License v2 以降
+
+## 作者
+
+Copyright (C) 2026 Hideharu Masai
