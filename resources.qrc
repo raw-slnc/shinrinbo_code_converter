@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/shinrinbo_code_converter">
+        <file>icon.png</file>
+    </qresource>
+</RCC>
