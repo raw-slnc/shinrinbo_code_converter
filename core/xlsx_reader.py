@@ -79,6 +79,14 @@ def get_cd_columns(headers: List[str]) -> List[str]:
     # ゾーニング施業種
     if 'ゾーニング施業種' in headers:
         cd_cols.append('ゾーニング施業種')
+    # 松林区分（CDで終わらないが変換対象）
+    if '松林区分' in headers:
+        cd_cols.append('松林区分')
+    # ゾーニング機能（CDで終わらない5列）
+    for h in headers:
+        if h.startswith('ゾーニング機能_'):
+            if h not in cd_cols:
+                cd_cols.append(h)
     # 施業履歴関連
     for h in headers:
         if h.startswith('施業履歴_施業方法') or h.startswith('施業履歴_事業種類'):
