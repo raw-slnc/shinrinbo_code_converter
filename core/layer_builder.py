@@ -23,7 +23,7 @@ def build_layer(
     from qgis.core import (
         QgsVectorLayer, QgsField, QgsFeature, QgsFields,
     )
-    from qgis.PyQt.QtCore import QVariant
+    from qgis.PyQt.QtCore import QMetaType
 
     # Shapefile読込（日本語ShapefileはCP932エンコーディング）
     shp_layer = QgsVectorLayer(shp_path, 'temp_shp', 'ogr')
@@ -57,7 +57,7 @@ def build_layer(
         if fname in shp_field_names and fname != 'KEY1':
             actual_name = fname + '_森林簿'
         # フィールド名は10文字制限があるDBFだがメモリレイヤ/GeoPackageでは制限なし
-        fields.append(QgsField(actual_name, QVariant.String))
+        fields.append(QgsField(actual_name, QMetaType.Type.QString))
 
     # 出力先の決定
     if output_gpkg:
@@ -196,7 +196,7 @@ def _build_geopackage(
         error_code = write_result
         error_msg = ''
 
-    if error_code != QgsVectorFileWriter.NoError:
+    if error_code != QgsVectorFileWriter.WriterError.NoError:
         result.errors.append(f'GeoPackage書き出しエラー: {error_msg}')
         return mem_layer  # フォールバックとしてメモリレイヤを返す
 

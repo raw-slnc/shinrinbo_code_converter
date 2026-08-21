@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+import os.path
+
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from . import resources
 
 
 class ShinrinboCodeConverter:
@@ -10,6 +11,7 @@ class ShinrinboCodeConverter:
 
     def __init__(self, iface):
         self.iface = iface
+        self.plugin_dir = os.path.dirname(__file__)
         self.actions = []
         self.menu = self.tr('&森林簿コード変換')
         self.dialog = None
@@ -18,7 +20,7 @@ class ShinrinboCodeConverter:
         return QCoreApplication.translate('ShinrinboCodeConverter', message)
 
     def initGui(self):
-        icon = QIcon(':/plugins/shinrinbo_code_converter/icon.png')
+        icon = QIcon(os.path.join(self.plugin_dir, 'icon.png'))
         action = QAction(icon, self.tr('森林簿コード変換'), self.iface.mainWindow())
         action.triggered.connect(self.run)
         self.iface.addVectorToolBarIcon(action)
