@@ -38,6 +38,11 @@
 
 - QGIS 3.0 以上
 - Python パッケージ: openpyxl, python-docx
+  - QGIS同梱のPythonには含まれないため、事前に以下でインストールしてください:
+    ```
+    pip install openpyxl python-docx
+    ```
+  - 必要なパッケージが不足している場合、プラグイン起動時に画面下部の結果欄にコピー可能なインストールコマンドが表示されます
 
 ## インストール
 

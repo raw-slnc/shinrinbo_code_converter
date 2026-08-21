@@ -1,11 +1,36 @@
 # -*- coding: utf-8 -*-
+import importlib.util
 import os
+import platform
+import sys
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QThread
 from qgis.PyQt.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox
 
 from .workers.parse_worker import ParseWorker
 from .workers.convert_worker import ConvertWorker
+
+REQUIRED_PACKAGES = {
+    'openpyxl': 'openpyxl',
+    'docx': 'python-docx',
+}
+
+
+def _missing_packages():
+    return [pip_name for mod_name, pip_name in REQUIRED_PACKAGES.items()
+            if importlib.util.find_spec(mod_name) is None]
+
+
+def _install_guidance(missing):
+    pkgs = ' '.join(missing)
+    python_exe = sys.executable or 'python3'
+    command = f'"{python_exe}" -m pip install {pkgs}'
+    if platform.system() == 'Windows':
+        note = 'コマンドプロンプトまたはOSGeo4Wシェルに上記コマンドを貼り付けて実行してください。'
+    else:
+        note = 'ターミナルに上記コマンドを貼り付けて実行してください。'
+    return command, note
+
 
 FORM_CLASS, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), 'shinrinbo_dialog_base.ui')
@@ -28,6 +53,7 @@ class ShinrinboDialog(QDialog, FORM_CLASS):
 
         self._connect_signals()
         self._check_cache()
+        self._check_dependencies()
 
     def _connect_signals(self):
         self.btnBrowseDocx.clicked.connect(self._browse_docx)
@@ -56,6 +82,17 @@ class ShinrinboDialog(QDialog, FORM_CLASS):
             self.labelCacheInfo.setText(f'キャッシュ済み ({dt:%Y-%m-%d %H:%M})')
         else:
             self.labelCacheInfo.setText('未解析')
+
+    def _check_dependencies(self):
+        missing = _missing_packages()
+        if not missing:
+            return
+        command, note = _install_guidance(missing)
+        self.textResult.setPlainText(
+            f'必要なPythonパッケージが不足しています: {", ".join(missing)}\n\n'
+            f'以下のコマンドをコピーして実行してください:\n{command}\n\n'
+            f'{note}'
+        )
 
     # ---- File Browse ----
 
