@@ -21,10 +21,24 @@ def _missing_packages():
             if importlib.util.find_spec(mod_name) is None]
 
 
+def _python_executable():
+    # QGIS本体内では sys.executable が qgis-bin.exe/qgis-ltr-bin.exe を指す。
+    # 同じbinフォルダのpython.exeを直接指定してもPYTHONHOME等の環境変数が
+    # 無く初期化に失敗するため、それらを設定してから起動する
+    # python-qgis(-ltr).bat を探す。
+    if platform.system() == 'Windows':
+        bin_dir = os.path.dirname(sys.executable)
+        for name in ('python-qgis.bat', 'python-qgis-ltr.bat'):
+            candidate = os.path.join(bin_dir, name)
+            if os.path.exists(candidate):
+                return candidate
+    return sys.executable or 'python3'
+
+
 def _install_guidance(missing):
     pkgs = ' '.join(missing)
-    python_exe = sys.executable or 'python3'
-    command = f'"{python_exe}" -m pip install {pkgs}'
+    python_exe = _python_executable()
+    command = f'"{python_exe}" -m pip install --user {pkgs}'
     if platform.system() == 'Windows':
         note = 'コマンドプロンプトまたはOSGeo4Wシェルに上記コマンドを貼り付けて実行してください。'
     else:
