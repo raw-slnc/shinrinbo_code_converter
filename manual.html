@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>森林簿コード変換 — マニュアル</title>
+<style>
+  body { font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", sans-serif;
+         font-size: 14px; line-height: 1.7; color: #333; max-width: 860px;
+         margin: 0 auto; padding: 24px 32px; }
+  h1   { font-size: 1.4em; color: #1e4a6e; margin: 0; }
+  .title-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    border-bottom: 2px solid #3f7ca6; padding-bottom: 6px;
+  }
+  h2   { font-size: 1.15em; margin-top: 2em; border-left: 4px solid #3f7ca6;
+         padding-left: 10px; color: #1e4a6e; }
+  h3   { font-size: 1em; margin-top: 1.4em; color: #444; }
+  table{ border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th   { background: #e6f0f6; text-align: left; padding: 6px 10px;
+         border: 1px solid #bcd4e2; font-size: 0.9em; }
+  td   { padding: 5px 10px; border: 1px solid #d4e6ee; font-size: 0.9em; vertical-align: top; }
+  code { background: #f4f4f4; padding: 1px 5px; border-radius: 3px; font-size: 0.88em; }
+  .note{ background: #fffbe6; border-left: 3px solid #e6c800;
+         padding: 8px 12px; margin: 10px 0; font-size: 0.9em; }
+  .warn{ background: #fdeeee; border-left: 3px solid #c0392b;
+         padding: 8px 12px; margin: 10px 0; font-size: 0.9em; }
+  .concept-link {
+    background: linear-gradient(135deg, #eef5fa, #f7fbfd);
+    border: 1px solid #b7d0e0; border-left: 6px solid #3f7ca6;
+    padding: 14px 16px; margin: 16px 0 22px; font-size: 0.92em;
+    box-shadow: 0 4px 14px rgba(30, 74, 110, 0.10);
+  }
+  .concept-title { color: #1e4a6e; font-weight: bold; font-size: 1.08em; margin-bottom: 4px; }
+  .concept-text { margin-bottom: 0; }
+  .sec { margin-bottom: 2.5em; }
+  ul   { padding-left: 1.4em; }
+  li   { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="title-row">
+  <h1>森林簿コード変換 — マニュアル</h1>
+</div>
+
+<div class="concept-link">
+  <div class="concept-title">このプラグインについて</div>
+  <div class="concept-text">県提供の森林簿（コード値のみのExcel）・コード表（DOCX）・森林計画図（Shapefile）を組み合わせ、コード値を名称に変換したGeoPackage/メモリレイヤを作成します。あわせて、所有者情報等のデータを既存のGeoPackageへ後から結合する機能も備えています。</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec">
+<h2>使用するデータについて</h2>
+<ul>
+  <li>「森林簿Excel」「同梱のコード表（DOCX）」「森林計画図Shapefile」は、必ず<strong>同一年度の最新版を組で</strong>使用してください。年度をまたいで組み合わせると、コードの意味が変わっている場合や、フィールド構成が一致しない場合があります。</li>
+  <li>コード表は年度ごとに県から配布されます。古いコード表のキャッシュが残っている状態で新しい年度のExcelを変換すると、対応関係がズレる可能性があります。年度が変わったらStep 1で新しいコード表を読み込み直してください。</li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec">
+<h2>プラグインの更新方針</h2>
+<ul>
+  <li>県のデータは年度更新（例年5月頃）で新しくなります。新データが出た際、プラグイン側の対応（コード表パース処理・列名対応表の見直し等）が必要であれば随時行います。</li>
+  <li>一方で、コード表・データ構成に変更がなく、既存の変換機能に影響がないと判断した場合は、変換機能自体には手を加えないことがあります。バージョンが上がっていない＝データが古いまま、を意味するとは限りません。</li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec">
+<h2>出力データの扱い方</h2>
+
+<h3>複数地域を1つのGeoPackageにまとめる運用</h3>
+<p>GeoPackageは1ファイルに複数レイヤを格納できる形式です。Step 4の出力設定で「既存のGeoPackageに新規レイヤとして追加する」を選ぶと、地域ごとに別ファイルを作らず、<strong>1つのgpkgファイルに地域ごとのレイヤとして積み増す</strong>運用ができます。レイヤ自体は地域ごとに分かれたまま保持されるため、地域単位でしか使わない運用にも、複数地域をまたいで扱いたい運用にも、どちらにも対応できます。</p>
+<div class="note">
+  同名レイヤが既に存在する場合は上書き確認が出ます。誤って別地域のレイヤを上書きしないよう、レイヤ名の重複には注意してください。
+</div>
+
+<h3>変換後データとオリジナル森林簿の違い</h3>
+<div class="warn">
+  県から提供されるのはコード値（CD）のみです。このプラグインが出力するデータは、コード値を名称列に変換して付加したものであり、<strong>テーブルのヘッダー（列名）は元の森林簿とは文字列レベルで異なります</strong>（コード列の直後に名称列が追加される、列の並びが変わる等）。変換後のデータは、あくまで<strong>このプラグインの出力物</strong>として扱ってください。県が公開する森林簿そのものと同一の構造・仕様であるとは考えないようにしてください。
+</div>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec">
+<h2>追加モード（所有者情報の結合）</h2>
+<p>所有者情報等のCSV/Excelを、既にこのプラグインで作成済みのGeoPackageへ後から結合する機能です。</p>
+
+<h3>結合の条件</h3>
+<p>結合対象のCSV/Excelには、以下の列が<strong>省略なく</strong>含まれている必要があります。</p>
+<table>
+  <tr><th>項目</th><th>許容される列名</th></tr>
+  <tr><td>KEY1</td><td><code>KEY1</code></td></tr>
+  <tr><td>整理番号（親番）</td><td><code>整理番号_親番</code>（正式形）または <code>整理番号_</code>（DBF10バイト制限による切り詰め形）</td></tr>
+  <tr><td>整理番号（枝番）</td><td><code>整理番号_枝番</code>（正式形）または <code>整理番号1</code>（DBF10バイト制限による切り詰め形）</td></tr>
+</table>
+<div class="note">
+  これらの列は森林簿データの個体識別キーです。省略・改変されたデータは正しい結合先を特定できないため、条件を満たさない場合は処理を中止します（プラグイン側で推測して補完することはしません）。
+</div>
+
+<h3>氏名・住所列の判定</h3>
+<p>ヘッダー名に「登記所有者_漢字」「登記所有者_住所」がそのまま残っていればそれを優先して使用します。見つからない場合のみ、値の文字列の傾向（漢字と数字の組み合わせ等）から自動判定します。</p>
+
+<h3>独自情報の格納について</h3>
+<p>結合条件（KEY1・整理番号が省略なく揃っていること）さえ満たしていれば、「登記所有者_漢字」「登記所有者_住所」には任意の独自情報を同じ仕組みで結合・格納することが可能です。</p>
+
+<h3>上書き設定</h3>
+<p>結合先に既に値が入っている場合、「既存の所有者情報を上書きする」のチェックで、上書きするか（新しい値を優先）、保持するか（既存値を残し空欄のみ埋める）を選べます。新しい値が空欄の場合は、上書き設定に関わらず既存値をそのまま保持します（空欄で既存データを消すことはありません）。</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="sec">
+<h2>現在のコード表について（既知の変換不足）</h2>
+<p>このプラグインが参照するコード表は、県が公開している最新版（R6森林簿コード表）です。本稿執筆時点でこれより新しい版は公開されておらず、今年度分の森林簿データにも同じR6コード表が同梱されています。</p>
+
+<p>以下の列は、コード値を名称に変換できず「[不明:コード値]」と表示されることがあります。これはプラグインの不具合ではなく、県公開のコード表自体に該当する定義が無い、または限定的にしか無いためです。</p>
+
+<table>
+  <tr><th>列名</th><th>状況</th></tr>
+  <tr>
+    <td>施業計画種CD</td>
+    <td>R6コード表に「施業計画種」という項目自体が見当たらず、対応する表がありません。値は常に未変換（コードのまま）になります。</td>
+  </tr>
+  <tr>
+    <td>流域CD</td>
+    <td>広域流域CDと同じ表を参照していますが、この表は2値（富士川広域流域・天竜川広域流域）のみで、流域CDが取り得る値の範囲をカバーしていません。実質的に未変換になります。</td>
+  </tr>
+  <tr>
+    <td>ゾーニング機能<br>（木材生産・水源涵養・山地災害防止・快適環境・保健）</td>
+    <td>対応する表自体はありますが、「該当あり」の1値のみが定義されており、「該当なし」を表す値の定義がありません。該当なしの箇所（多数派）が未変換として表示されます。</td>
+  </tr>
+</table>
+
+<div class="note">
+  コード表の不整合はプラグインで考慮しません。公開情報を優先します。照合メソッド判断の不備も考えられますが、プラグイン側で憶測により補完することはせず、県のコード表が更新された際に改めて対応します。
+</div>
+</div>
+
+<hr>
+<p style="font-size:0.8em;color:#888;text-align:center;">
+  森林簿コード変換 &nbsp;|&nbsp; Developed by Avid Tree Work
+</p>
+
+</body>
+</html>

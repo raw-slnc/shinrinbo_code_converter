@@ -12,7 +12,7 @@ R6森林簿コード表（詳細版）.docx を解析し、コード→テキス
 """
 import re
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 

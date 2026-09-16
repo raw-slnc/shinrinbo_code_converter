@@ -3,9 +3,8 @@
 データ結合モジュール
 森林簿XLSXの変換済みデータとShapefileをKEY1+整理番号_枝番の複合キーで結合する。
 """
-import os
 import logging
-from typing import Dict, Any, List, Callable, Optional
+from typing import List, Callable, Optional
 
 from .code_table_registry import CodeTableRegistry
 from .code_converter import convert_row, get_name_columns, CD_COLUMN_TO_TABLE

@@ -2,7 +2,7 @@
 from qgis.PyQt.QtCore import QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from . import resources
+from . import resources  # noqa: F401 - Qtリソース登録の副作用のためimportが必要
 
 
 class ShinrinboCodeConverter:

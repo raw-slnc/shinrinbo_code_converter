@@ -21,7 +21,7 @@ def build_layer(
 ):
     """ShapefileとXLSXデータをKEY1で結合してQGISレイヤを構築する。"""
     from qgis.core import (
-        QgsVectorLayer, QgsField, QgsFeature, QgsFields,
+        QgsVectorLayer, QgsField, QgsFields,
     )
     from qgis.PyQt.QtCore import QVariant
 
@@ -163,7 +163,7 @@ def _build_geopackage(
 ):
     """GeoPackageファイルとして構築"""
     from qgis.core import (
-        QgsVectorLayer, QgsVectorFileWriter, QgsFeature,
+        QgsVectorLayer, QgsVectorFileWriter,
         QgsCoordinateTransformContext,
     )
 
