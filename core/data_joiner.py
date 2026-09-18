@@ -3,9 +3,8 @@
 データ結合モジュール
 森林簿XLSXの変換済みデータとShapefileをKEY1+整理番号_枝番の複合キーで結合する。
 """
-import os
 import logging
-from typing import Dict, Any, List, Callable, Optional
+from typing import List, Callable, Optional
 
 from .code_table_registry import CodeTableRegistry
 from .code_converter import convert_row, get_name_columns, CD_COLUMN_TO_TABLE
@@ -25,6 +24,7 @@ class JoinResult:
         self.duplicate_key = 0
         self.output_fields = 0
         self.layer = None
+        self.cancelled = False
         self.errors: List[str] = []
 
     def summary(self) -> str:
@@ -78,6 +78,7 @@ def join_data(
 
     for row in xlsx_rows:
         if cancel_check and cancel_check():
+            result.cancelled = True
             return result
 
         if headers is None:
@@ -170,6 +171,9 @@ def join_data(
 
     result.layer = layer
     result.output_fields = len(all_field_names)
+
+    if result.cancelled:
+        return result
 
     # 未結合XLSX行を計算
     result.unmatched_xlsx = result.xlsx_rows - result.joined - result.duplicate_key

@@ -14,7 +14,50 @@
    <string>森林簿コード変換</string>
   </property>
   <layout class="QVBoxLayout" name="mainLayout">
-   <!-- Step 1: コード表 -->
+   <!-- モード切替（右上・独立行） -->
+   <item>
+    <layout class="QHBoxLayout" name="hboxModeToggle">
+     <item>
+      <widget class="QPushButton" name="btnModeToggle">
+       <property name="text">
+        <string>初期モード</string>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>220</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnManual">
+       <property name="text">
+        <string>マニュアル</string>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>100</width>
+         <height>16777215</height>
+        </size>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <!-- Step 1: コード表（初期モード） -->
    <item>
     <widget class="QGroupBox" name="groupCodeTable">
      <property name="title">
@@ -179,11 +222,129 @@
      </layout>
     </widget>
    </item>
-   <!-- Step 3: 出力設定 -->
+   <!-- Step 1: 既存GeoPackageの選択（追加モード） -->
+   <item>
+    <widget class="QGroupBox" name="groupExistingGpkg">
+     <property name="title">
+      <string>Step 1: 既存GeoPackageの選択</string>
+     </property>
+     <layout class="QGridLayout" name="gridExistingGpkg">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelExistingGpkg">
+        <property name="text">
+         <string>GeoPackage:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="editExistingGpkgPath">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="placeholderText">
+         <string>森林簿コンバーターで作成したgpkgを選択...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QPushButton" name="btnBrowseExistingGpkg">
+        <property name="text">
+         <string>参照...</string>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>80</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelExistingLayer">
+        <property name="text">
+         <string>レイヤ:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1" colspan="2">
+       <widget class="QComboBox" name="comboExistingLayer">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- 所有者情報データ選択（初期モードStep3・追加モードStep2） -->
+   <item>
+    <widget class="QGroupBox" name="groupPersonalInfo">
+     <property name="title">
+      <string>Step 3: 所有者情報データ選択（任意）</string>
+     </property>
+     <layout class="QGridLayout" name="gridPersonalInfo">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelPersonalInfo">
+        <property name="text">
+         <string>所有者情報CSV/XLSX:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="editPersonalInfoPath">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="placeholderText">
+         <string>所有者情報付きCSV/XLSXを選択...</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QPushButton" name="btnBrowsePersonalInfo">
+        <property name="text">
+         <string>参照...</string>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>80</width>
+          <height>16777215</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelPersonalInfoInfo">
+        <property name="text">
+         <string>情報:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1" colspan="2">
+       <widget class="QLabel" name="labelPersonalInfoDetail">
+        <property name="text">
+         <string>未選択</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1" colspan="2">
+       <widget class="QCheckBox" name="checkOverwriteExisting">
+        <property name="text">
+         <string>既存の所有者情報を上書きする（未チェック時は空欄のみ記入）</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <!-- Step 4: 出力設定（初期モード） -->
    <item>
     <widget class="QGroupBox" name="groupOutput">
      <property name="title">
-      <string>Step 3: 出力設定</string>
+      <string>Step 4: 出力設定</string>
      </property>
      <layout class="QGridLayout" name="gridOutput">
       <item row="0" column="0">
@@ -246,21 +407,34 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="2" column="1" colspan="2">
+       <widget class="QCheckBox" name="checkAppendToExistingGpkg">
+        <property name="text">
+         <string>既存のGeoPackageに新規レイヤとして追加する（地域ごとに1ファイルへ統合）</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
        <widget class="QLabel" name="labelLayerName">
         <property name="text">
          <string>レイヤ名:</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="1" colspan="2">
+      <item row="3" column="1" colspan="2">
        <widget class="QLineEdit" name="editLayerName">
         <property name="text">
          <string>森林簿_変換済</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <widget class="QCheckBox" name="checkKeepCodes">
         <property name="text">
          <string>コード列も残す</string>
@@ -273,11 +447,11 @@
      </layout>
     </widget>
    </item>
-   <!-- Step 4: 実行 -->
+   <!-- Step 5: 実行（初期モード） -->
    <item>
     <widget class="QGroupBox" name="groupExecute">
      <property name="title">
-      <string>Step 4: 実行</string>
+      <string>Step 5: 実行</string>
      </property>
      <layout class="QVBoxLayout" name="vboxExecute">
       <item>
@@ -317,25 +491,24 @@
           <property name="enabled">
            <bool>false</bool>
           </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
+          <property name="minimumSize">
            <size>
-            <width>40</width>
-            <height>20</height>
+            <width>0</width>
+            <height>32</height>
            </size>
           </property>
-         </spacer>
+         </widget>
         </item>
         <item>
          <widget class="QPushButton" name="btnClose">
           <property name="text">
            <string>閉じる</string>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>32</height>
+           </size>
           </property>
          </widget>
         </item>
@@ -344,20 +517,35 @@
      </layout>
     </widget>
    </item>
-   <!-- 結果サマリ -->
+   <!-- 結果サマリ（追加モードで非表示グループ分の余白をここで吸収し、
+        ダイアログ自体の高さはモードで変えない） -->
    <item>
     <widget class="QTextEdit" name="textResult">
      <property name="readOnly">
       <bool>true</bool>
      </property>
-     <property name="maximumSize">
+     <property name="minimumSize">
       <size>
-       <width>16777215</width>
+       <width>0</width>
        <height>120</height>
       </size>
      </property>
      <property name="placeholderText">
       <string>結果サマリがここに表示されます</string>
+     </property>
+    </widget>
+   </item>
+   <!-- クレジット表記 -->
+   <item>
+    <widget class="QLabel" name="labelCredit">
+     <property name="text">
+      <string>Developed by Avid Tree Work</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="styleSheet">
+      <string>color: #888; font-size: 8pt; padding: 4px 0;</string>
      </property>
     </widget>
    </item>

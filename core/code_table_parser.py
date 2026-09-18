@@ -12,7 +12,7 @@ R6森林簿コード表（詳細版）.docx を解析し、コード→テキス
 """
 import re
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -208,8 +208,6 @@ def _parse_simple(table) -> Dict[str, str]:
         if len(cells) >= 2 and cells[0]:
             result[cells[0]] = cells[1]
     return result
-
-
 
 
 def _parse_complex(table, config: dict) -> Dict[str, str]:

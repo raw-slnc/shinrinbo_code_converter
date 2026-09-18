@@ -21,7 +21,7 @@ def build_layer(
 ):
     """ShapefileとXLSXデータをKEY1で結合してQGISレイヤを構築する。"""
     from qgis.core import (
-        QgsVectorLayer, QgsField, QgsFeature, QgsFields,
+        QgsVectorLayer, QgsField, QgsFields,
     )
     from qgis.PyQt.QtCore import QMetaType
 
@@ -99,7 +99,9 @@ def _build_memory_layer(
 
     for shp_feat in shp_layer.getFeatures():
         if cancel_check and cancel_check():
-            break
+            result.cancelled = True
+            result.joined = joined
+            return None
 
         count += 1
         key1 = str(shp_feat['KEY1']).strip() if shp_feat['KEY1'] else ''
@@ -163,7 +165,7 @@ def _build_geopackage(
 ):
     """GeoPackageファイルとして構築"""
     from qgis.core import (
-        QgsVectorLayer, QgsVectorFileWriter, QgsFeature,
+        QgsVectorLayer, QgsVectorFileWriter,
         QgsCoordinateTransformContext,
     )
 

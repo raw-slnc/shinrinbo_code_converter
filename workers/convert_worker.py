@@ -53,6 +53,7 @@ class ConvertWorker(QObject):
             self.finished.emit({
                 'layer': join_result.layer,
                 'summary': join_result.summary(),
+                'cancelled': join_result.cancelled,
             })
 
         except Exception as e:
