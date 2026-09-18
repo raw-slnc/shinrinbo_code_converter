@@ -2,6 +2,7 @@
 import importlib.util
 import os
 import platform
+import re
 import sys
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import QThread
@@ -209,15 +210,25 @@ class ShinrinboDialog(QDialog, FORM_CLASS):
             self._auto_detect_shapefile(path)
 
     def _auto_detect_shapefile(self, xlsx_path):
+        """県提供データは「{地域}_森林簿{日付8桁}.xlsx」「{地域}_計画図{日付8桁}.shp」
+        のように、地域名と日付の両方が一致する組で提供される。日付が抽出できない、
+        または一致するshpが見つからない場合は自動選択せず、手動選択に委ねる
+        （違う年度のshpを誤って自動選択しないための安全側の判断）。
+        """
         directory = os.path.dirname(xlsx_path)
         basename = os.path.basename(xlsx_path)
-        region = basename.split('_')[0] if '_' in basename else None
-        if region:
-            shp_pattern = f'{region}_計画図.shp'
-            shp_path = os.path.join(directory, shp_pattern)
-            if os.path.exists(shp_path):
-                self.editShpPath.setText(shp_path)
-                self.labelShpDetail.setText(f'{shp_pattern} (自動検出)')
+        if '_' not in basename:
+            return
+        region = basename.split('_')[0]
+        date_match = re.search(r'(\d{8})\.xlsx$', basename)
+        if not date_match:
+            return
+        date = date_match.group(1)
+        shp_pattern = f'{region}_計画図{date}.shp'
+        shp_path = os.path.join(directory, shp_pattern)
+        if os.path.exists(shp_path):
+            self.editShpPath.setText(shp_path)
+            self.labelShpDetail.setText(f'{shp_pattern} (自動検出)')
 
     def _browse_shp(self):
         path, _ = QFileDialog.getOpenFileName(

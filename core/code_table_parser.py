@@ -210,8 +210,6 @@ def _parse_simple(table) -> Dict[str, str]:
     return result
 
 
-
-
 def _parse_complex(table, config: dict) -> Dict[str, str]:
     """COMPLEX: 指定されたCD列と名称列からパース"""
     cd_col = config['cd_col']

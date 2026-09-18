@@ -69,7 +69,6 @@ def read_xlsx(path: str, sheet_name: str = 'データ',
     wb.close()
 
 
-
 def get_cd_columns(headers: List[str]) -> List[str]:
     """ヘッダーリストからCD列名を抽出する。"""
     cd_cols = [h for h in headers if h.endswith('CD')]

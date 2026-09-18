@@ -125,4 +125,3 @@ class CodeTableRegistry:
     def get_table_count(self) -> int:
         """登録されたコード表の総数"""
         return len(self.tables) + len(self.oaza)
-
