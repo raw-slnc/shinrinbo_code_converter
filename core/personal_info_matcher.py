@@ -19,9 +19,16 @@ from typing import Dict, List, Optional, Tuple
 KEY1_VARIANTS = ['KEY1']
 PARENT_VARIANTS = ['整理番号_親番', '整理番号_']
 BRANCH_VARIANTS = ['整理番号_枝番', '整理番号1']
+LAND_PARENT_VARIANTS = ['地番_親番', '地番親番', '地番親']
+LAND_BRANCH_VARIANTS = ['地番_枝番', '地番枝番', '地番枝']
 
 _KANJI_RE = re.compile(r'[一-鿿]')
 _DIGIT_RE = re.compile(r'[0-9０-９]')
+_FULLWIDTH_TRANS = str.maketrans({
+    '０': '0', '１': '1', '２': '2', '３': '3', '４': '4',
+    '５': '5', '６': '6', '７': '7', '８': '8', '９': '9',
+    '－': '-', 'ー': '-', '−': '-', '―': '-',
+})
 
 
 class HeaderValidationResult:
@@ -57,6 +64,17 @@ def _resolve_column(headers: List[str], variants: List[str]) -> Optional[str]:
     return None
 
 
+def resolve_land_number_columns(headers: List[str]) -> Tuple[Optional[str], Optional[str]]:
+    """地番の親番・枝番列を解決する。
+
+    単独の「地番」列は森林簿の想定外なので使わない。親番列と枝番列が
+    別々に存在する場合のみ、重複キーの追加照合条件として利用する。
+    """
+    parent_col = _resolve_column(headers, LAND_PARENT_VARIANTS)
+    branch_col = _resolve_column(headers, LAND_BRANCH_VARIANTS)
+    return parent_col, branch_col
+
+
 def validate_headers(headers: List[str]) -> HeaderValidationResult:
     """個人情報データのヘッダーを検証し、KEY1・整理番号列を解決する。"""
     result = HeaderValidationResult()
@@ -88,6 +106,25 @@ def build_composite_key(key1, parent, branch) -> str:
     if branch_s:
         composite += f'_{branch_s}'
     return composite
+
+
+def _normalize_land_value(value, allow_hyphen: bool) -> str:
+    s = str(value).strip() if value is not None else ''
+    if not s:
+        return ''
+    s = s.translate(_FULLWIDTH_TRANS)
+    allowed = r'0-9\-' if allow_hyphen else r'0-9'
+    return re.sub(fr'[^{allowed}]', '', s)
+
+
+def normalize_land_parent(value) -> str:
+    """地番親番を比較用に正規化する。親番ではハイフンを扱わない。"""
+    return _normalize_land_value(value, allow_hyphen=False)
+
+
+def normalize_land_branch(value) -> str:
+    """地番枝番を比較用に正規化する。枝番では 1-1 のような値を保持する。"""
+    return _normalize_land_value(value, allow_hyphen=True)
 
 
 # 標準フォーマット（県提供xlsx）でヘッダーが生きている場合はこちらを最優先で使う。

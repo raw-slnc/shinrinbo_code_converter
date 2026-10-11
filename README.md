@@ -36,7 +36,7 @@
 
 ## 動作要件
 
-- QGIS 3.0 以上
+- QGIS 4.0 以上
 - Python パッケージ: openpyxl, python-docx
   - QGIS同梱のPythonには含まれないため、事前に以下でインストールしてください:
     ```

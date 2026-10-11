@@ -5,10 +5,12 @@
 KEY1+整理番号_親番+整理番号_枝番の複合キーで後乗せする。
 """
 import logging
-from typing import Callable, Dict, List, Optional
+from collections import Counter
+from typing import Callable, Dict, List, Optional, Tuple
 
 from .personal_info_matcher import (
-    build_composite_key, classify_name_address_columns, validate_headers,
+    build_composite_key, classify_name_address_columns, normalize_land_branch,
+    normalize_land_parent, resolve_land_number_columns, validate_headers,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,6 +40,7 @@ class PersonalInfoJoinResult:
         self.overwritten = 0      # 既存値があり、上書き設定により書き換えた件数
         self.skipped_existing = 0  # 既存値があり、上書きしない設定のため保持した件数
         self.key1_zero_padded = 0  # KEY1の桁不足を0埋め補正した個人情報データ行数
+        self.land_number_matched = 0  # 重複キーで地番まで使って照合した地物数
         self.name_column: Optional[str] = None
         self.address_column: Optional[str] = None
         self.errors: List[str] = []
@@ -54,6 +57,7 @@ class PersonalInfoJoinResult:
             f'上書き（項目単位）: {self.overwritten:,}',
             f'既存値を保持（項目単位）: {self.skipped_existing:,}',
             f'KEY1の0埋め補正: {self.key1_zero_padded:,}件',
+            f'地番照合（重複キー）: {self.land_number_matched:,}件',
             f'氏名列と判定: {self.name_column or "(判定不能)"}',
             f'住所列と判定: {self.address_column or "(判定不能)"}',
         ]
@@ -102,6 +106,14 @@ def _apply_field(layer, feat, field_idx, new_value, overwrite_existing, result):
     else:
         layer.changeAttributeValue(feat.id(), field_idx, new_value)
         result.newly_filled += 1
+
+
+def _join_lookup_key(composite_key: str, land_parent='', land_branch=''):
+    return (
+        composite_key,
+        normalize_land_parent(land_parent),
+        normalize_land_branch(land_branch),
+    )
 
 
 def join_personal_info(
@@ -155,17 +167,43 @@ def join_personal_info(
             )
             return result
 
-    # gpkg側のKEY1桁数を検出する（先頭1件で判定。同一データセット内は固定長のはず）
     key1_field_idx = layer.fields().indexOf('KEY1')
+    parent_field_idx = layer.fields().indexOf('整理番号_親番')
+    branch_field_idx = layer.fields().indexOf('整理番号_枝番')
+
+    # gpkg側のKEY1桁数と、地番を追加照合すべき重複キーを検出する。
     key1_width = 0
+    gpkg_key_counts = Counter()
     for f in layer.getFeatures():
         v = _feat_value(f, key1_field_idx)
         if v is not None and str(v).strip():
-            key1_width = len(str(v).strip())
-        break
+            if not key1_width:
+                key1_width = len(str(v).strip())
+        gpkg_key_counts[build_composite_key(
+            _feat_value(f, key1_field_idx),
+            _feat_value(f, parent_field_idx),
+            _feat_value(f, branch_field_idx),
+        )] += 1
+    duplicate_gpkg_keys = {
+        key for key, count in gpkg_key_counts.items() if key and count > 1
+    }
 
-    # 氏名/住所候補列（KEY1・整理番号以外の全列）を文字列傾向で判定
-    key_cols = {header_check.key1_col, header_check.parent_col, header_check.branch_col}
+    gpkg_land_parent_idx = layer.fields().indexOf('地番_親番')
+    gpkg_land_branch_idx = layer.fields().indexOf('地番_枝番')
+    if duplicate_gpkg_keys and (gpkg_land_parent_idx < 0 or gpkg_land_branch_idx < 0):
+        result.errors.append(
+            '重複キーの地物がありますが、GeoPackageに地番_親番/地番_枝番フィールドがありません。'
+            'この森林簿コンバーターで地番を含めて作成したGeoPackageを指定してください。'
+        )
+        return result
+
+    land_parent_col, land_branch_col = resolve_land_number_columns(headers)
+
+    # 氏名/住所候補列（KEY1・整理番号・地番親枝番以外の全列）を文字列傾向で判定
+    key_cols = {
+        header_check.key1_col, header_check.parent_col, header_check.branch_col,
+        land_parent_col, land_branch_col,
+    }
     candidate_columns = [h for h in headers if h not in key_cols]
     name_col, address_col = classify_name_address_columns(source_rows, candidate_columns)
     result.name_column = name_col
@@ -177,8 +215,16 @@ def join_personal_info(
         )
         return result
 
-    # 複合キー -> (氏名, 住所) の辞書を構築
-    source_map: Dict[str, Dict[str, str]] = {}
+    if duplicate_gpkg_keys and (land_parent_col is None or land_branch_col is None):
+        result.errors.append(
+            '重複キーの地物がありますが、所有者情報データに地番_親番/地番_枝番列がありません。'
+            '単独の「地番」列は照合に使用しません。'
+        )
+        return result
+
+    # (複合キー, 地番親番, 地番枝番) -> (氏名, 住所) の辞書を構築。
+    # 非重複キーでは地番を空にして従来どおり照合し、重複キーのみ地番を追加条件にする。
+    source_map: Dict[Tuple[str, str, str], Dict[str, str]] = {}
     for row in source_rows:
         key1_value = row.get(header_check.key1_col)
         if key1_width:
@@ -190,12 +236,20 @@ def join_personal_info(
         )
         if not composite_key:
             continue
+        if composite_key in duplicate_gpkg_keys:
+            map_key = _join_lookup_key(
+                composite_key,
+                row.get(land_parent_col),
+                row.get(land_branch_col),
+            )
+        else:
+            map_key = _join_lookup_key(composite_key)
         entry = {}
         if name_col:
             entry['name'] = str(row.get(name_col, '') or '').strip()
         if address_col:
             entry['address'] = str(row.get(address_col, '') or '').strip()
-        source_map[composite_key] = entry
+        source_map[map_key] = entry
 
     if progress_callback:
         progress_callback(10, f'{len(source_map):,}件の個人情報を読込みました')
@@ -218,6 +272,8 @@ def join_personal_info(
     key1_idx = layer.fields().indexOf('KEY1')
     parent_idx = layer.fields().indexOf('整理番号_親番')
     branch_idx = layer.fields().indexOf('整理番号_枝番')
+    land_parent_idx = layer.fields().indexOf('地番_親番')
+    land_branch_idx = layer.fields().indexOf('地番_枝番')
 
     total = layer.featureCount()
     result.gpkg_features = total
@@ -233,7 +289,15 @@ def join_personal_info(
         composite_key = build_composite_key(
             _feat_value(feat, key1_idx), _feat_value(feat, parent_idx), _feat_value(feat, branch_idx)
         )
-        entry = source_map.get(composite_key)
+        if composite_key in duplicate_gpkg_keys:
+            map_key = _join_lookup_key(
+                composite_key,
+                _feat_value(feat, land_parent_idx),
+                _feat_value(feat, land_branch_idx),
+            )
+        else:
+            map_key = _join_lookup_key(composite_key)
+        entry = source_map.get(map_key)
         if entry:
             if name_col:
                 _apply_field(layer, feat, name_idx, entry.get('name', ''),
@@ -241,8 +305,10 @@ def join_personal_info(
             if address_col:
                 _apply_field(layer, feat, addr_idx, entry.get('address', ''),
                              overwrite_existing, result)
-            matched_keys.add(composite_key)
+            matched_keys.add(map_key)
             result.matched += 1
+            if composite_key in duplicate_gpkg_keys:
+                result.land_number_matched += 1
         else:
             result.unmatched_gpkg += 1
 

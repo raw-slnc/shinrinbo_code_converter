@@ -22,6 +22,7 @@ class JoinResult:
         self.unmatched_xlsx = 0
         self.unknown_cd_count = 0
         self.duplicate_key = 0
+        self.duplicate_key_groups = 0
         self.output_fields = 0
         self.layer = None
         self.cancelled = False
@@ -36,7 +37,7 @@ class JoinResult:
             f'Shape未結合: {self.unmatched_shp:,}',
             f'XLSX未結合: {self.unmatched_xlsx:,}',
             f'変換不明値: {self.unknown_cd_count:,}件',
-            f'重複キー: {self.duplicate_key:,}行',
+            f'重複キー: {self.duplicate_key_groups:,}組 / 追加行 {self.duplicate_key:,}行',
             f'出力フィールド数: {self.output_fields}',
         ]
         if self.errors:
@@ -70,7 +71,7 @@ def join_data(
     if progress_callback:
         progress_callback(0, 'コード変換中...')
 
-    xlsx_data = {}  # composite_key -> converted row dict
+    xlsx_data = {}  # composite_key -> list of converted row dicts, preserving XLSX order
     headers = None
     cd_columns = None
     name_columns = None
@@ -110,10 +111,7 @@ def join_data(
         if branch:
             composite_key += f'_{branch}'
         if composite_key:
-            if composite_key in xlsx_data:
-                result.duplicate_key += 1
-            else:
-                xlsx_data[composite_key] = converted
+            xlsx_data.setdefault(composite_key, []).append(converted)
 
         if row_count % 5000 == 0 and progress_callback:
             total_xlsx = len(xlsx_rows)
@@ -121,6 +119,8 @@ def join_data(
             progress_callback(min(40, pct), f'コード変換中... {row_count:,}行')
 
     result.xlsx_rows = row_count
+    result.duplicate_key_groups = sum(1 for rows in xlsx_data.values() if len(rows) > 1)
+    result.duplicate_key = sum(len(rows) - 1 for rows in xlsx_data.values() if len(rows) > 1)
 
     if progress_callback:
         progress_callback(40, f'コード変換完了: {row_count:,}行')
@@ -131,7 +131,7 @@ def join_data(
         return result
 
     # サンプル行からフィールドを構築
-    sample_row = next(iter(xlsx_data.values()))
+    sample_row = next(iter(xlsx_data.values()))[0]
     raw_field_names = list(sample_row.keys())
 
     # CD列の直後に名称列を挿入（隣接配置）
@@ -176,6 +176,6 @@ def join_data(
         return result
 
     # 未結合XLSX行を計算
-    result.unmatched_xlsx = result.xlsx_rows - result.joined - result.duplicate_key
+    result.unmatched_xlsx = result.xlsx_rows - result.joined
 
     return result
