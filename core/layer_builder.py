@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def build_layer(
     shp_path: str,
-    xlsx_data: Dict[str, Dict[str, Any]],
+    xlsx_data: Dict[str, List[Dict[str, Any]]],
     field_names: List[str],
     output_gpkg: Optional[str],
     layer_name: str,
@@ -74,6 +74,18 @@ def build_layer(
         )
 
 
+def _take_xlsx_row(xlsx_data, consumed_counts, composite_key):
+    """Return the next XLSX row for this key, preserving file order."""
+    rows = xlsx_data.get(composite_key)
+    if not rows:
+        return None
+    index = consumed_counts.get(composite_key, 0)
+    if index >= len(rows):
+        return None
+    consumed_counts[composite_key] = index + 1
+    return rows[index]
+
+
 def _build_memory_layer(
     shp_layer, xlsx_data, fields, field_names, shp_field_names,
     crs, layer_name,
@@ -96,6 +108,7 @@ def _build_memory_layer(
     total = shp_layer.featureCount()
     count = 0
     joined = 0
+    consumed_counts = {}
 
     for shp_feat in shp_layer.getFeatures():
         if cancel_check and cancel_check():
@@ -126,8 +139,8 @@ def _build_memory_layer(
                 new_feat.setAttribute(idx, shp_feat[f.name()])
                 idx += 1
 
-        # XLSXデータの結合（複合キーでルックアップ）
-        xlsx_row = xlsx_data.get(composite_key)
+        # XLSXデータの結合（同一キーが複数ある場合は、SHP/XLSXの並び順で1件ずつ割当）
+        xlsx_row = _take_xlsx_row(xlsx_data, consumed_counts, composite_key)
         if xlsx_row:
             for fname in field_names:
                 actual_name = fname
