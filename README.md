@@ -36,7 +36,7 @@
 
 ## 動作要件
 
-- QGIS 4.0 以上
+- QGIS 3.44 以上（QGIS 4.x を含む）
 - Python パッケージ: openpyxl, python-docx
   - QGIS同梱のPythonには含まれないため、事前に以下でインストールしてください:
     ```
@@ -46,11 +46,22 @@
 
 ## インストール
 
+QGIS 公式プラグインリポジトリで公開しています。
+
+1. QGIS のメニュー「プラグイン → プラグインの管理とインストール」を開く
+2. 「すべて」で `Shinrinbo Code Converter` を検索
+3. 「プラグインをインストール」を押す
+
+プラグインマネージャからは最新の安定版がインストールされます。
+
+### 手動でインストールする場合
+
 1. このリポジトリをクローンまたはダウンロード
-2. `shinrinbo_code_converter` フォルダを QGIS のプラグインディレクトリにコピー
-   - Linux: `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/`
-   - Windows: `%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\`
-   - macOS: `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/`
+2. `shinrinbo_code_converter` フォルダを QGIS のプラグインディレクトリにコピー（QGIS 3.x は `QGIS3`、QGIS 4.x は `QGIS4` のフォルダ）
+   - Linux: `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/`（QGIS 4.x: `~/.local/share/QGIS/QGIS4/profiles/default/python/plugins/`）
+   - Windows: `%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\`（QGIS 4.x: `%APPDATA%\QGIS\QGIS4\profiles\default\python\plugins\`）
+   - macOS: `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/`（QGIS 4.x: `~/Library/Application Support/QGIS/QGIS4/profiles/default/python/plugins/`）
+   - 場所は QGIS の「設定 → ユーザープロファイル → アクティブなプロファイルフォルダを開く」の中の `python/plugins` でも確認できます
 3. QGISを起動し、プラグインマネージャから有効化
 
 ## サポート

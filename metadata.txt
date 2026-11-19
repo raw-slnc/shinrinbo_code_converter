@@ -4,10 +4,10 @@
 
 [general]
 name=Shinrinbo Code Converter
-qgisMinimumVersion=4.0.0
+qgisMinimumVersion=3.44
 qgisMaximumVersion=4.99
 description=Converts code values in Shizuoka Prefecture's forest register to human-readable text based on the code table, joins with forest planning maps, and outputs as a QGIS layer.
-version=1.1.1
+version=2.0.0
 author=Hideharu Masai
 email=hideharumasai@void.mints.ne.jp
 
@@ -21,6 +21,7 @@ repository=https://github.com/raw-slnc/shinrinbo_code_converter
 
 hasProcessingProvider=no
 changelog=
+    2.0.0 - [IMPORTANT] Now also runs on QGIS 3.44 and later. QGIS 3.x users can update from 0.2.1 to this version; Cancel now stops reading the forest register and the conversion.
     1.1.1 - [CRITICAL FIX] Fixed duplicate-key handling so repeated forest-register records are assigned to matching plan-map features in file order, and owner info joins use land-number parent/branch fields when needed
     1.1.0 - Property-owner info (name/address) from a municipality-provided CSV/XLSX can be joined into an already-converted GeoPackage, matched by KEY1 + 整理番号; multiple regions can be combined as separate layers in a single GeoPackage; a manual button is available in the dialog
     1.0.0 - QGIS 4.x support
